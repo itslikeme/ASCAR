@@ -238,7 +238,7 @@ def main():
 
 
 	#START PROGRAM
-	dns_list = ['nest0r.ddns.net','lyriumhideout.ddns.net']
+	dns_list = ['nest0r.ddns.net','lyriumhideout.ddns.net','escaserver.ddns.net']
 	local_list = ['127.0.0.1']
 	p = program('ASCAR','0.1.1',str(time.ctime()),dns_list,8624)
 	p.initialization(p.name, p.version, p.ctime)
