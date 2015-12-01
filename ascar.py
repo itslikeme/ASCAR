@@ -229,11 +229,11 @@ def main():
 	global debug_mode
 
 	#DEBUG MODE
-	debug_mode = True
+	debug_mode = False
 
 
 	#CONTROLSWITCH
-	socketMode = False
+	socketMode = True
 	ftpMode = True
 
 
